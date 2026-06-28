@@ -10,7 +10,7 @@ This project is open source under GNU General Public License v3.0 only (GPL-3.0-
 
 Using the DMG installer is recommended:
 
-1. Open `Kindle_Pilot-0.0.4.dmg`.
+1. Open `Kindle_Pilot-0.0.1.dmg`.
 2. Drag `Kindle Pilot.app` to `Applications`.
 3. Open `Kindle Pilot` from Applications or Spotlight.
 

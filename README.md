@@ -10,7 +10,7 @@ Kindle Pilot 是一个 macOS Kindle 辅助工具。它可以通过 SSH 控制已
 
 推荐使用 DMG 安装包：
 
-1. 打开 `Kindle_Pilot-0.0.4.dmg`。
+1. 打开 `Kindle_Pilot-0.0.1.dmg`。
 2. 将 `Kindle Pilot.app` 拖到 `Applications`。
 3. 从“应用程序”或 Spotlight 打开 `Kindle Pilot`。
 
