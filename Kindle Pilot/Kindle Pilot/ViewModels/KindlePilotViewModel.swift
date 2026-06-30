@@ -95,6 +95,12 @@ final class KindlePilotViewModel: ObservableObject {
     @Published var uploadItems: [BookUploadItem] = []
     @Published var clippings: [Clipping] = []
     @Published var clippingSearchText = ""
+    @Published var clippingsSortOrder: ClippingsSortOrder = .addedAt {
+        didSet {
+            settingsStore.saveClippingsSortOrder(clippingsSortOrder)
+            refreshClippingSelection()
+        }
+    }
     @Published var selectedClippingBookID: String?
     @Published var selectedClippingID: Clipping.ID?
     @Published var clippingsCacheURL: URL?
@@ -126,6 +132,7 @@ final class KindlePilotViewModel: ObservableObject {
         self.settingsStore = AppSettingsStore()
         self.keychainStore = KeychainStore()
         self.settings = Self.passwordOnly(settingsStore.load())
+        self.clippingsSortOrder = settingsStore.loadClippingsSortOrder()
         self.password = (try? keychainStore.loadPassword(account: passwordAccount)) ?? ""
 
         let connectionService = ConnectionService(
@@ -143,6 +150,7 @@ final class KindlePilotViewModel: ObservableObject {
         self.settingsStore = settingsStore
         self.keychainStore = keychainStore
         self.settings = Self.passwordOnly(settingsStore.load())
+        self.clippingsSortOrder = settingsStore.loadClippingsSortOrder()
         self.password = (try? keychainStore.loadPassword(account: passwordAccount)) ?? ""
 
         let connectionService = ConnectionService(
@@ -179,10 +187,10 @@ final class KindlePilotViewModel: ObservableObject {
 
         let query = clippingSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
-            return scoped
+            return sortedClippings(scoped)
         }
 
-        return scoped.filter { clipping in
+        let filtered = scoped.filter { clipping in
             let values = [
                 clipping.bookTitle,
                 clipping.author ?? "",
@@ -197,6 +205,8 @@ final class KindlePilotViewModel: ObservableObject {
                 value.localizedCaseInsensitiveContains(query)
             }
         }
+
+        return sortedClippings(filtered)
     }
 
     var selectedClipping: Clipping? {
@@ -846,6 +856,68 @@ final class KindlePilotViewModel: ObservableObject {
             self.selectedClippingBookID = nil
         }
         refreshClippingSelection()
+    }
+
+    private func sortedClippings(_ items: [Clipping]) -> [Clipping] {
+        switch clippingsSortOrder {
+        case .addedAt:
+            return items.sorted(by: compareClippingsByAddedAt)
+        case .location:
+            return items.sorted(by: compareClippingsByBookAndLocation)
+        }
+    }
+
+    private func compareClippingsByAddedAt(_ lhs: Clipping, _ rhs: Clipping) -> Bool {
+        switch (lhs.addedAt, rhs.addedAt) {
+        case let (left?, right?) where left != right:
+            return left < right
+        case (nil, _?):
+            return false
+        case (_?, nil):
+            return true
+        default:
+            return compareClippingsByBookAndLocation(lhs, rhs)
+        }
+    }
+
+    private func compareClippingsByBookAndLocation(_ lhs: Clipping, _ rhs: Clipping) -> Bool {
+        let bookComparison = lhs.bookDisplayTitle.localizedStandardCompare(rhs.bookDisplayTitle)
+        if bookComparison != .orderedSame {
+            return bookComparison == .orderedAscending
+        }
+
+        switch (lhs.locationStart, rhs.locationStart) {
+        case let (left?, right?) where left != right:
+            return left < right
+        case (nil, _?):
+            return false
+        case (_?, nil):
+            return true
+        default:
+            break
+        }
+
+        switch (lhs.locationEnd, rhs.locationEnd) {
+        case let (left?, right?) where left != right:
+            return left < right
+        case (nil, _?):
+            return false
+        case (_?, nil):
+            return true
+        default:
+            break
+        }
+
+        switch (lhs.addedAt, rhs.addedAt) {
+        case let (left?, right?) where left != right:
+            return left < right
+        case (nil, _?):
+            return false
+        case (_?, nil):
+            return true
+        default:
+            return lhs.id < rhs.id
+        }
     }
 
     private func clippingFilterSummaryText(_ result: ClippingsSyncResult) -> String {

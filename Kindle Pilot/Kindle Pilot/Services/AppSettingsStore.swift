@@ -1,7 +1,8 @@
 import Foundation
 
 final class AppSettingsStore {
-    private let key = "connectionSettings"
+    private let connectionKey = "connectionSettings"
+    private let clippingsSortOrderKey = "clippingsSortOrder"
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -9,7 +10,7 @@ final class AppSettingsStore {
     }
 
     func load() -> ConnectionSettings {
-        guard let data = defaults.data(forKey: key) else {
+        guard let data = defaults.data(forKey: connectionKey) else {
             return .defaults
         }
 
@@ -22,6 +23,17 @@ final class AppSettingsStore {
 
     func save(_ settings: ConnectionSettings) throws {
         let data = try JSONEncoder().encode(settings)
-        defaults.set(data, forKey: key)
+        defaults.set(data, forKey: connectionKey)
+    }
+
+    func loadClippingsSortOrder() -> ClippingsSortOrder {
+        guard let rawValue = defaults.string(forKey: clippingsSortOrderKey) else {
+            return .addedAt
+        }
+        return ClippingsSortOrder(rawValue: rawValue) ?? .addedAt
+    }
+
+    func saveClippingsSortOrder(_ sortOrder: ClippingsSortOrder) {
+        defaults.set(sortOrder.rawValue, forKey: clippingsSortOrderKey)
     }
 }

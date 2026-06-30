@@ -110,7 +110,7 @@ final class ClippingsService {
     }
 
     private func makeMarkdown(_ clippings: [Clipping], options: ClippingsExportOptions) -> String {
-        var output: [String] = ["# \(L("Kindle 摘抄"))", ""]
+        var output: [String] = []
         let grouped = Dictionary(grouping: clippings, by: \.bookID)
 
         for bookID in grouped.keys.sorted(by: { lhs, rhs in
@@ -122,41 +122,38 @@ final class ClippingsService {
                 continue
             }
 
-            output.append("## \(first.bookDisplayTitle)")
-            output.append("")
+            if !output.isEmpty {
+                output.append("")
+                output.append("")
+            }
 
-            for (index, clipping) in bookClippings.enumerated() {
-                let meta = clippingDetailText(
-                    index: index + 1,
-                    for: clipping,
-                    includeDetails: options.includeDetails
-                )
+            output.append(contentsOf: markdownBookHeader(for: first))
 
-                if !meta.isEmpty {
-                    output.append("**\(meta)**")
-                    output.append("")
+            var isFirstClipping = true
+            for clipping in bookClippings {
+                if isFirstClipping {
+                    isFirstClipping = false
+                } else {
+                    output.append(contentsOf: markdownBlockSpacer())
                 }
 
                 if clipping.kind == .note {
                     output.append(L("Kindle 批注:"))
                     output.append("")
-                    output.append(markdownQuote(clipping.text.isEmpty ? L("_无内容_") : clipping.text))
+                    output.append(contentsOf: markdownTextLines(clipping.text))
                 } else {
-                    output.append(markdownQuote(clipping.text.isEmpty ? L("_无内容_") : clipping.text))
+                    output.append(contentsOf: markdownTextLines(clipping.text))
 
                     for note in clipping.kindleNotes {
                         output.append("")
-                        output.append(L("Kindle 批注:"))
-                        output.append("")
-                        output.append(markdownQuote(note.text.isEmpty ? L("_无内容_") : note.text))
-
-                        if options.includeDetails, let addedAt = note.addedAt {
-                            output.append("")
-                            output.append("_\(LF("批注于: %@", exportDateFormatter.string(from: addedAt)))_")
-                        }
+                        output.append(contentsOf: markdownNestedKindleNoteBlock(note))
                     }
                 }
-                output.append("")
+
+                if let detail = markdownDetailLine(for: clipping, includeDetails: options.includeDetails) {
+                    output.append("")
+                    output.append(detail)
+                }
             }
         }
 
@@ -265,16 +262,147 @@ final class ClippingsService {
         return parts.joined(separator: " · ")
     }
 
-    private func markdownQuote(_ value: String) -> String {
+    private func markdownBookHeader(for clipping: Clipping) -> [String] {
+        var lines = [
+            "<p align=\"center\">",
+            "  <strong>\(htmlEscaped(clipping.bookTitle))</strong>"
+        ]
+
+        if let author = clipping.author?.trimmingCharacters(in: .whitespacesAndNewlines), !author.isEmpty {
+            lines[1] += "<br>"
+            lines.append("  <sub>\(htmlEscaped(author))</sub>")
+        }
+
+        lines.append("</p>")
+        lines.append("")
+        lines.append("")
+        return lines
+    }
+
+    private func markdownTextLines(_ value: String) -> [String] {
+        let text = value.isEmpty ? L("_无内容_") : value
+        return text.components(separatedBy: .newlines)
+    }
+
+    private func markdownNestedKindleNoteBlock(_ note: KindleNote) -> [String] {
+        var lines = [
+            "> <sub>\(L("Kindle 批注:"))</sub>",
+            ">"
+        ]
+
+        lines.append(
+            contentsOf: markdownTextLines(note.text).map { line in
+                line.isEmpty ? ">" : "> \(line)"
+            }
+        )
+        return lines
+    }
+
+    private func markdownBlockSpacer() -> [String] {
+        ["", "<p>&nbsp;</p>", ""]
+    }
+
+    private func markdownDetailLine(
+        for clipping: Clipping,
+        includeDetails: Bool
+    ) -> String? {
+        guard includeDetails else {
+            return nil
+        }
+
+        return markdownDetailLine(
+            addedAt: clipping.addedAt,
+            page: clipping.page,
+            location: clipping.location,
+            locationStart: clipping.locationStart,
+            locationEnd: clipping.locationEnd
+        )
+    }
+
+    private func markdownDetailLine(
+        for note: KindleNote,
+        includeDetails: Bool
+    ) -> String? {
+        guard includeDetails else {
+            return nil
+        }
+
+        return markdownDetailLine(
+            addedAt: note.addedAt,
+            page: note.page,
+            location: note.location,
+            locationStart: note.locationStart,
+            locationEnd: note.locationEnd
+        )
+    }
+
+    private func markdownDetailLine(
+        addedAt: Date?,
+        page: String?,
+        location: String?,
+        locationStart: Int?,
+        locationEnd: Int?
+    ) -> String? {
+        var parts: [String] = []
+
+        if let addedAt {
+            parts.append(markdownDateFormatter.string(from: addedAt))
+        }
+
+        if let locationText = markdownLocationText(
+            location: location,
+            locationStart: locationStart,
+            locationEnd: locationEnd
+        ) {
+            parts.append(locationText)
+        } else if let page = page?.trimmingCharacters(in: .whitespacesAndNewlines), !page.isEmpty {
+            parts.append("P\(page)")
+        }
+
+        guard !parts.isEmpty else {
+            return nil
+        }
+
+        return "<p align=\"right\"><sub>\(htmlEscaped(parts.joined(separator: " · ")))</sub></p>"
+    }
+
+    private func markdownLocationText(
+        location: String?,
+        locationStart: Int?,
+        locationEnd: Int?
+    ) -> String? {
+        if let locationStart {
+            let end = locationEnd ?? locationStart
+            if end == locationStart {
+                return "L\(locationStart)"
+            }
+            return "L\(locationStart)–\(end)"
+        }
+
+        guard let location = location?.trimmingCharacters(in: .whitespacesAndNewlines), !location.isEmpty else {
+            return nil
+        }
+
+        return "L\(location.replacingOccurrences(of: "-", with: "–"))"
+    }
+
+    private func htmlEscaped(_ value: String) -> String {
         value
-            .components(separatedBy: .newlines)
-            .map { "> \($0)" }
-            .joined(separator: "\n")
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
     }
 
     private func csvEscape(_ value: String) -> String {
         let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
         return "\"\(escaped)\""
+    }
+
+    private var markdownDateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd · HH:mm"
+        return formatter
     }
 
     private var exportDateFormatter: DateFormatter {

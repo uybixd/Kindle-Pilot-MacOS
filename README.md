@@ -16,6 +16,10 @@ Kindle Pilot 是一个 macOS Kindle 辅助工具。它可以通过 SSH 控制已
 
 如果 macOS 提示无法验证开发者，在“系统设置 -> 隐私与安全性”里允许打开，或右键点击 app 后选择“打开”。
 
+## 使用说明
+
+1. 所有需要通过 SSH 连接 Kindle 的操作，都需要 Kindle 保持点亮。若 Kindle 锁屏、息屏或进入休眠，连接可能失败、中断，或导致操作没有响应。
+
 ## 连接 Kindle
 
 已越狱 Kindle 可以使用完整功能。先在 Kindle 上确认 SSH 可用，然后在 app 设置里填写：

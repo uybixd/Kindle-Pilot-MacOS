@@ -174,6 +174,22 @@ struct ClippingsExportOptions {
     var includeDetails = true
 }
 
+enum ClippingsSortOrder: String, CaseIterable, Identifiable {
+    case addedAt
+    case location
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .addedAt:
+            return L("按添加时间")
+        case .location:
+            return L("按位置")
+        }
+    }
+}
+
 struct ClippingsSyncResult {
     let clippings: [Clipping]
     let cacheURL: URL

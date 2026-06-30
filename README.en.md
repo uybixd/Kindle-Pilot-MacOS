@@ -16,6 +16,10 @@ Using the DMG installer is recommended:
 
 If macOS says it cannot verify the developer, allow it in System Settings -> Privacy & Security, or right-click the app and choose Open.
 
+## Usage Notes
+
+1. All operations that connect to the Kindle through SSH require the Kindle to stay awake with the screen on. If the Kindle is locked, the screen is off, or it enters sleep mode, the connection may fail, drop, or leave the operation unresponsive.
+
 ## Connect Kindle
 
 A jailbroken Kindle can use the full feature set. First confirm that SSH is available on the Kindle, then fill in the following in the app settings:

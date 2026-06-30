@@ -17,6 +17,19 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section(L("摘抄")) {
+                Picker(L("排序方式"), selection: $model.clippingsSortOrder) {
+                    ForEach(ClippingsSortOrder.allCases) { sortOrder in
+                        Text(sortOrder.title).tag(sortOrder)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Text(L("按位置排序时，同一本书内位置号小的摘抄会排在前面。"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section(L("连接")) {
                 TextField("Kindle IP", text: $model.settings.host)
                     .textFieldStyle(.roundedBorder)

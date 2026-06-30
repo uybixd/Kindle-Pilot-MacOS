@@ -89,6 +89,10 @@ final class AppLanguageStore: ObservableObject {
         "界面": "Interface",
         "语言": "Language",
         "默认跟随系统语言。切换后会立即应用到界面。": "Defaults to the system language. Changes apply to the interface immediately.",
+        "排序方式": "Sort Order",
+        "按添加时间": "By Added Time",
+        "按位置": "By Location",
+        "按位置排序时，同一本书内位置号小的摘抄会排在前面。": "When sorting by location, clippings with smaller location numbers appear first within the same book.",
 
         "整理": "Library",
         "摘抄": "Clippings",
